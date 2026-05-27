@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build (Release)
+        run: |
+          xcodebuild build \
+            -project RetroInvaders.xcodeproj \
+            -scheme RetroInvaders \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=YES
+
+      - name: Verify .saver bundle exists
+        run: |
+          SAVER=$(find build -name "RetroInvaders.saver" -type d | head -1)
+          if [ -z "$SAVER" ]; then
+            echo "ERROR: RetroInvaders.saver not found"
+            exit 1
+          fi
+          echo "✓ Found: $SAVER"
+          ls -lh "$SAVER/Contents/Resources/"
+
+      - name: Upload artifact (CI)
+        uses: actions/upload-artifact@v5
+        with:
+          name: RetroInvaders-CI-${{ github.sha }}
+          path: build/Build/Products/Release/RetroInvaders.saver
+          retention-days: 7

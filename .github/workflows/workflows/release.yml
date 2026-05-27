@@ -1,0 +1,92 @@
+name: Release
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build (Release — Universal Binary)
+        run: |
+          xcodebuild build \
+            -project RetroInvaders.xcodeproj \
+            -scheme RetroInvaders \
+            -configuration Release \
+            -derivedDataPath build \
+            ARCHS="arm64 x86_64" \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=YES
+
+      - name: Verify bundle
+        run: |
+          SAVER="build/Build/Products/Release/RetroInvaders.saver"
+          if [ ! -d "$SAVER" ]; then
+            echo "ERROR: RetroInvaders.saver not found"
+            find build -name "*.saver" 2>/dev/null
+            exit 1
+          fi
+          echo "✓ Bundle: $SAVER"
+          find "$SAVER" -type f | sort
+
+      - name: Calculate next version
+        id: version
+        run: |
+          LATEST=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          VER=${LATEST#v}
+          MAJOR=$(echo "$VER" | cut -d. -f1)
+          MINOR=$(echo "$VER" | cut -d. -f2)
+          PATCH=$(echo "$VER" | cut -d. -f3)
+          NEXT="v${MAJOR}.${MINOR}.$((PATCH + 1))"
+          echo "tag=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "prev=$LATEST" >> "$GITHUB_OUTPUT"
+          echo "Next: $NEXT  (previous: $LATEST)"
+
+      - name: Package .saver as zip
+        run: |
+          cd build/Build/Products/Release
+          xattr -cr RetroInvaders.saver 2>/dev/null || true
+          zip -r RetroInvaders.saver.zip RetroInvaders.saver
+          mv RetroInvaders.saver.zip "$GITHUB_WORKSPACE/"
+          echo "✓ Packaged: $(ls -lh $GITHUB_WORKSPACE/RetroInvaders.saver.zip | awk '{print $5}')"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "Retro Invaders ${{ steps.version.outputs.tag }}"
+          generate_release_notes: true
+          body: |
+            ## Retro Invaders ${{ steps.version.outputs.tag }}
+
+            Screensaver para macOS inspirado en TI Invaders (TI-99/4A, 1981).
+
+            ### Instalación
+            1. Descargar `RetroInvaders.saver.zip`
+            2. Descomprimir
+            3. Si Gatekeeper bloquea:
+               ```bash
+               xattr -cr ~/Downloads/RetroInvaders.saver
+               ```
+            4. Doble clic en `RetroInvaders.saver`
+            5. Preferencias del Sistema → Salvapantallas
+
+            **Requisitos:** macOS 12.0 Monterey o superior
+          files: RetroInvaders.saver.zip
