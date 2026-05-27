@@ -123,7 +123,7 @@ final class RetroInvadersView: ScreenSaverView {
     private var invX: CGFloat = 0, invY: CGFloat = 0, invDX: CGFloat = 1
     private var shipX: CGFloat = 0, shipY: CGFloat = 0, shipDir: CGFloat = 1
     private var ufoX: CGFloat = -200, ufoActive = false, ufoTimer = 0
-    private var frame = 0, stepTimer = 0
+    private var frameCount = 0, stepTimer = 0
     private var score = 0, highScore = 0, lives = 3
     private var gameOver = false
     private var restartDelay = 0
@@ -180,7 +180,7 @@ final class RetroInvadersView: ScreenSaverView {
         shipX = floor(W / 2); shipY = floor(H * 0.86); shipDir = 1
         bullets = []; invBullets = []; explosions = []
         ufoX = -200; ufoActive = false; ufoTimer = 300 + Int.random(in: 0..<200)
-        frame = 0; stepTimer = 0
+        frameCount = 0; stepTimer = 0
         score = 0; lives = 3; gameOver = false; restartDelay = 0
     }
 
@@ -192,7 +192,7 @@ final class RetroInvadersView: ScreenSaverView {
             return
         }
         let W = bounds.width, H = bounds.height
-        frame += 1
+        frameCount += 1
 
         // ship
         shipX += sc * 1.5 * shipDir
@@ -200,7 +200,7 @@ final class RetroInvadersView: ScreenSaverView {
         if shipX - sc*5.5 < sc*4     { shipDir =  1 }
 
         // auto shoot
-        if frame % 55 == 0 && bullets.count < 3 {
+        if frameCount % 55 == 0 && bullets.count < 3 {
             bullets.append(Bullet(x: shipX, y: shipY - sc*4, vy: -sc*5))
         }
 
@@ -221,35 +221,10 @@ final class RetroInvadersView: ScreenSaverView {
             let totalW = CGFloat(COLS) * (sc*11 + sc*4) - sc*4
             let hitWall = (invDX > 0 && invX+totalW > W-sc*8) || (invDX < 0 && invX < sc*8)
             if hitWall { invDX = -invDX; invY += sc*6 } else { invX += invDX }
-            if frame % 3 == 0 { invaderShoot(alive: alive) }
+            if frameCount % 3 == 0 { invaderShoot(alive: alive) }
         }
 
-        // player bullets
-        bullets = bullets.filter { b in
-            var b = b; b.y += b.vy
-            if b.y < 0 { return false }
-            if checkShield(x: b.x, y: b.y) { return false }
-            for i in 0..<invaders.count {
-                guard invaders[i].alive else { continue }
-                let pos = invPos(invaders[i])
-                if b.x >= pos.x && b.x <= pos.x+sc*11 && b.y >= pos.y && b.y <= pos.y+sc*8 {
-                    invaders[i].alive = false
-                    let pts = invaders[i].row == 0 ? 30 : invaders[i].row <= 2 ? 20 : 10
-                    score += pts; if score > highScore { highScore = score }
-                    let c = rowColor(invaders[i].row)
-                    explosions.append(Explosion(x: pos.x+sc*5.5, y: pos.y+sc*4, t: 18, color: c))
-                    return false
-                }
-            }
-            if ufoActive && b.x >= ufoX-sc*7 && b.x <= ufoX+sc*7 && b.y < H*0.12 {
-                ufoActive = false; score += 100; if score > highScore { highScore = score }
-                explosions.append(Explosion(x: ufoX, y: H*0.05, t: 22, color: colorYellow))
-                return false
-            }
-            bullets[bullets.firstIndex(where: { $0.x == b.x && $0.y == b.y - b.vy }) ?? 0] = b
-            return true
-        }
-        // recalc (simple approach: just update in place)
+        // player bullets — update position then check collisions
         for i in 0..<bullets.count { bullets[i].y += bullets[i].vy }
         bullets = bullets.filter { b in
             if b.y < 0 { return false }
@@ -343,7 +318,7 @@ final class RetroInvadersView: ScreenSaverView {
     override func draw(_ rect: NSRect) {
         let ctx = NSGraphicsContext.current!.cgContext
         let W = bounds.width, H = bounds.height
-        let tick = (frame / 20) % 2
+        let tick = (frameCount / 20) % 2
 
         // background
         ctx.setFillColor(NSColor.black.cgColor)
@@ -377,7 +352,7 @@ final class RetroInvadersView: ScreenSaverView {
         }
 
         // ship
-        if !gameOver || frame % 6 < 4 {
+        if !gameOver || frameCount % 6 < 4 {
             drawSprite(ctx, shipSprite, x: shipX - sc*5.5, y: shipY - sc*3.5, color: colorShip)
         }
 
@@ -390,7 +365,7 @@ final class RetroInvadersView: ScreenSaverView {
         // invader bullets zigzag
         ctx.setFillColor(colorInvBullet.cgColor)
         for b in invBullets {
-            let z = frame % 4 < 2 ? sc*0.5 : -sc*0.5
+            let z = frameCount % 4 < 2 ? sc*0.5 : -sc*0.5
             ctx.fill(CGRect(x: b.x+z-sc*0.5, y: b.y,       width: sc, height: sc*3))
             ctx.fill(CGRect(x: b.x-z-sc*0.5, y: b.y+sc*1.5, width: sc, height: sc*2))
         }
