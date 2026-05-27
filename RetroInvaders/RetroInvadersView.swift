@@ -1,580 +1,448 @@
 import ScreenSaver
-import WebKit
-import os.log
 
-private let log = OSLog(subsystem: "com.operiasuite.RetroInvaders", category: "ScreenSaver")
+// MARK: - Sprites (pixel arrays, 1=on 0=off)
 
+private let spriteA: [[Int]] = [
+    [0,0,1,0,0,0,0,0,1,0,0],
+    [0,0,0,1,0,0,0,1,0,0,0],
+    [0,0,1,1,1,1,1,1,1,0,0],
+    [0,1,1,0,1,1,1,0,1,1,0],
+    [1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,1,1,1,1,1,1,1,0,1],
+    [1,0,1,0,0,0,0,0,1,0,1],
+    [0,0,0,1,1,0,1,1,0,0,0],
+]
+private let spriteA2: [[Int]] = [
+    [0,0,1,0,0,0,0,0,1,0,0],
+    [1,0,0,1,0,0,0,1,0,0,1],
+    [1,0,1,1,1,1,1,1,1,0,1],
+    [1,1,1,0,1,1,1,0,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1],
+    [0,1,1,1,1,1,1,1,1,1,0],
+    [0,0,1,0,0,0,0,0,1,0,0],
+    [0,1,0,0,0,0,0,0,0,1,0],
+]
+private let spriteB: [[Int]] = [
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,1,1,1,0,0],
+    [0,1,1,1,1,1,1,0],
+    [1,1,0,1,1,0,1,1],
+    [1,1,1,1,1,1,1,1],
+    [0,1,0,1,1,0,1,0],
+    [1,0,0,0,0,0,0,1],
+    [0,1,0,0,0,0,1,0],
+]
+private let spriteB2: [[Int]] = [
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,1,1,1,0,0],
+    [0,1,1,1,1,1,1,0],
+    [1,1,0,1,1,0,1,1],
+    [1,1,1,1,1,1,1,1],
+    [0,0,1,1,1,1,0,0],
+    [0,1,0,0,0,0,1,0],
+    [1,0,0,0,0,0,0,1],
+]
+private let spriteC: [[Int]] = [
+    [0,0,0,1,1,1,0,0,0],
+    [0,1,1,1,1,1,1,1,0],
+    [1,1,1,1,1,1,1,1,1],
+    [1,1,0,1,1,1,0,1,1],
+    [1,1,1,1,1,1,1,1,1],
+    [0,0,1,0,0,0,1,0,0],
+    [0,1,0,1,0,1,0,1,0],
+    [1,0,0,0,0,0,0,0,1],
+]
+private let spriteC2: [[Int]] = [
+    [0,0,0,1,1,1,0,0,0],
+    [0,1,1,1,1,1,1,1,0],
+    [1,1,1,1,1,1,1,1,1],
+    [1,1,0,1,1,1,0,1,1],
+    [1,1,1,1,1,1,1,1,1],
+    [0,0,1,0,0,0,1,0,0],
+    [0,0,0,1,0,1,0,0,0],
+    [0,0,1,0,0,0,1,0,0],
+]
+private let shipSprite: [[Int]] = [
+    [0,0,0,0,0,1,0,0,0,0,0],
+    [0,0,0,0,1,1,1,0,0,0,0],
+    [0,0,0,0,1,1,1,0,0,0,0],
+    [0,1,1,1,1,1,1,1,1,1,0],
+    [1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1],
+]
+private let shieldBlock: [[Int]] = [
+    [0,0,1,1,1,1,1,1,1,1,1,1,0,0],
+    [0,1,1,1,1,1,1,1,1,1,1,1,1,0],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,0,0,0,0,0,0,0,0,1,1,1],
+    [1,1,0,0,0,0,0,0,0,0,0,0,1,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+]
+private let ufoSprite: [[Int]] = [
+    [0,0,0,0,0,1,1,1,1,0,0,0,0,0],
+    [0,0,0,1,1,1,1,1,1,1,1,1,0,0],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [0,0,1,1,0,1,1,1,1,0,1,1,0,0],
+    [0,0,0,0,1,1,1,1,1,1,0,0,0,0],
+]
+
+// MARK: - Colors
+private let colorGreen   = NSColor(red: 0.30, green: 0.91, blue: 0.30, alpha: 1)
+private let colorBlue    = NSColor(red: 0.48, green: 0.48, blue: 1.00, alpha: 1)
+private let colorViolet  = NSColor(red: 0.60, green: 0.40, blue: 1.00, alpha: 1)
+private let colorOrange  = NSColor(red: 1.00, green: 0.55, blue: 0.16, alpha: 1)
+private let colorOrange2 = NSColor(red: 0.88, green: 0.36, blue: 0.00, alpha: 1)
+private let colorYellow  = NSColor(red: 0.96, green: 0.82, blue: 0.13, alpha: 1)
+private let colorShield  = NSColor(red: 0.00, green: 0.80, blue: 0.00, alpha: 1)
+private let colorShip    = NSColor(red: 0.00, green: 1.00, blue: 0.00, alpha: 1)
+private let colorBullet  = NSColor.white
+private let colorInvBullet = NSColor.yellow
+
+// MARK: - Game structs
+private struct Invader { var col: Int; var row: Int; var alive: Bool }
+private struct Bullet  { var x: CGFloat; var y: CGFloat; var vy: CGFloat }
+private struct Shield  { var x: CGFloat; var y: CGFloat; var pixels: [[Int]] }
+private struct Explosion { var x: CGFloat; var y: CGFloat; var t: Int; var color: NSColor }
+
+// MARK: - ScreenSaverView
 @objc(RetroInvadersView)
 final class RetroInvadersView: ScreenSaverView {
 
-    private var webView: WKWebView?
-    private var hasLoaded = false
+    // game state
+    private var sc: CGFloat = 4
+    private var invaders: [Invader] = []
+    private var bullets: [Bullet] = []
+    private var invBullets: [Bullet] = []
+    private var shields: [Shield] = []
+    private var explosions: [Explosion] = []
+    private var invX: CGFloat = 0, invY: CGFloat = 0, invDX: CGFloat = 1
+    private var shipX: CGFloat = 0, shipY: CGFloat = 0, shipDir: CGFloat = 1
+    private var ufoX: CGFloat = -200, ufoActive = false, ufoTimer = 0
+    private var frame = 0, stepTimer = 0
+    private var score = 0, highScore = 0, lives = 3
+    private var gameOver = false
+    private var restartDelay = 0
 
-    override init?(frame: NSRect, isPreview: Bool) {
-        super.init(frame: frame, isPreview: isPreview)
-        setupWebView()
-    }
+    private let COLS = 11, ROWS = 5
 
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        setupWebView()
-    }
-
-    private func setupWebView() {
-        let config = WKWebViewConfiguration()
-        let prefs = WKPreferences()
-        prefs.setValue(true, forKey: "allowFileAccessFromFileURLs")
-        config.preferences = prefs
-
-        let wv = WKWebView(frame: bounds, configuration: config)
-        wv.autoresizingMask = [.width, .height]
-        wv.translatesAutoresizingMaskIntoConstraints = false
-        wv.setValue(false, forKey: "drawsBackground")
-        if #available(macOS 12.0, *) {
-            wv.underPageBackgroundColor = .black
-        }
-        wv.allowsMagnification = false
+    override init?(frame frameRect: NSRect, isPreview: Bool) {
+        super.init(frame: frameRect, isPreview: isPreview)
+        animationTimeInterval = 1.0 / 30.0
         wantsLayer = true
         layer?.backgroundColor = NSColor.black.cgColor
-        addSubview(wv)
-        NSLayoutConstraint.activate([
-            wv.leadingAnchor.constraint(equalTo: leadingAnchor),
-            wv.trailingAnchor.constraint(equalTo: trailingAnchor),
-            wv.topAnchor.constraint(equalTo: topAnchor),
-            wv.bottomAnchor.constraint(equalTo: bottomAnchor),
-        ])
-        self.webView = wv
+    }
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        animationTimeInterval = 1.0 / 30.0
+        wantsLayer = true
+        layer?.backgroundColor = NSColor.black.cgColor
     }
 
     override func startAnimation() {
         super.startAnimation()
-        guard !hasLoaded, let wv = webView else { return }
-        wv.loadHTMLString(Self.gameHTML, baseURL: nil)
-        hasLoaded = true
+        initGame()
     }
 
-    override func stopAnimation() {
-        webView?.evaluateJavaScript("(typeof lastTime !== 'undefined') && (lastTime = -9e9)", completionHandler: nil)
-        super.stopAnimation()
+    override func animateOneFrame() {
+        update()
+        setNeedsDisplay(bounds)
     }
 
-    override func animateOneFrame() {}
+    override var isOpaque: Bool { true }
 
-    override func resizeSubviews(withOldSize old: NSSize) {
-        super.resizeSubviews(withOldSize: old)
-        webView?.frame = bounds
-    }
+    // MARK: - Init
+    private func initGame() {
+        let W = bounds.width, H = bounds.height
+        let scW = floor(W * 0.80 / CGFloat(COLS * 15))
+        let scH = floor(H * 0.55 / CGFloat(ROWS * 14))
+        sc = max(2, min(scW, scH))
 
-    override func setFrameSize(_ s: NSSize) {
-        super.setFrameSize(s)
-        webView?.frame = bounds
-    }
+        let totalW = CGFloat(COLS) * (sc * 11 + sc * 4) - sc * 4
+        invX = floor((W - totalW) / 2)
+        invY = floor(H * 0.08)
+        invDX = sc
 
-    deinit {
-        webView?.stopLoading()
-        webView?.removeFromSuperview()
-    }
+        invaders = (0..<ROWS).flatMap { r in (0..<COLS).map { c in Invader(col: c, row: r, alive: true) } }
 
-    // MARK: — HTML embebido (evita sandbox file:// en macOS Sonoma/Sequoia)
-    static let gameHTML: String = #"""
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>Space Invaders Screensaver</title>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
-canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
-</style>
-</head>
-<body>
-<canvas id="c"></canvas>
-<script>
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-
-function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-resize();
-window.addEventListener('resize', resize);
-
-// --- PIXEL SPRITES (11x8 grid, 1=on, 0=off) ---
-// Invader tipo A (top 2 rows) - alien "cangrejo"
-const spriteA = [
-  [0,0,1,0,0,0,0,0,1,0,0],
-  [0,0,0,1,0,0,0,1,0,0,0],
-  [0,0,1,1,1,1,1,1,1,0,0],
-  [0,1,1,0,1,1,1,0,1,1,0],
-  [1,1,1,1,1,1,1,1,1,1,1],
-  [1,0,1,1,1,1,1,1,1,0,1],
-  [1,0,1,0,0,0,0,0,1,0,1],
-  [0,0,0,1,1,0,1,1,0,0,0],
-];
-// Frame 2 sprite A
-const spriteA2 = [
-  [0,0,1,0,0,0,0,0,1,0,0],
-  [1,0,0,1,0,0,0,1,0,0,1],
-  [1,0,1,1,1,1,1,1,1,0,1],
-  [1,1,1,0,1,1,1,0,1,1,1],
-  [1,1,1,1,1,1,1,1,1,1,1],
-  [0,1,1,1,1,1,1,1,1,1,0],
-  [0,0,1,0,0,0,0,0,1,0,0],
-  [0,1,0,0,0,0,0,0,0,1,0],
-];
-// Invader tipo B (medio) - "medusa"
-const spriteB = [
-  [0,0,0,1,1,0,0,0],
-  [0,0,1,1,1,1,0,0],
-  [0,1,1,1,1,1,1,0],
-  [1,1,0,1,1,0,1,1],
-  [1,1,1,1,1,1,1,1],
-  [0,1,0,1,1,0,1,0],
-  [1,0,0,0,0,0,0,1],
-  [0,1,0,0,0,0,1,0],
-];
-const spriteB2 = [
-  [0,0,0,1,1,0,0,0],
-  [0,0,1,1,1,1,0,0],
-  [0,1,1,1,1,1,1,0],
-  [1,1,0,1,1,0,1,1],
-  [1,1,1,1,1,1,1,1],
-  [0,0,1,1,1,1,0,0],
-  [0,1,0,0,0,0,1,0],
-  [1,0,0,0,0,0,0,1],
-];
-// Invader tipo C (bottom 2 rows) - "pulpo"
-const spriteC = [
-  [0,0,0,1,1,1,0,0,0],
-  [0,1,1,1,1,1,1,1,0],
-  [1,1,1,1,1,1,1,1,1],
-  [1,1,0,1,1,1,0,1,1],
-  [1,1,1,1,1,1,1,1,1],
-  [0,0,1,0,0,0,1,0,0],
-  [0,1,0,1,0,1,0,1,0],
-  [1,0,0,0,0,0,0,0,1],
-];
-const spriteC2 = [
-  [0,0,0,1,1,1,0,0,0],
-  [0,1,1,1,1,1,1,1,0],
-  [1,1,1,1,1,1,1,1,1],
-  [1,1,0,1,1,1,0,1,1],
-  [1,1,1,1,1,1,1,1,1],
-  [0,0,1,0,0,0,1,0,0],
-  [0,0,0,1,0,1,0,0,0],
-  [0,0,1,0,0,0,1,0,0],
-];
-
-// Nave jugador
-const shipSprite = [
-  [0,0,0,0,0,1,0,0,0,0,0],
-  [0,0,0,0,1,1,1,0,0,0,0],
-  [0,0,0,0,1,1,1,0,0,0,0],
-  [0,1,1,1,1,1,1,1,1,1,0],
-  [1,1,1,1,1,1,1,1,1,1,1],
-  [1,1,1,1,1,1,1,1,1,1,1],
-  [1,1,1,1,1,1,1,1,1,1,1],
-];
-
-// Escudo pixel
-const shieldBlock = [
-  [0,0,1,1,1,1,1,1,1,1,1,1,0,0],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,0],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,1,1,0,0,0,0,0,0,0,0,1,1,1],
-  [1,1,0,0,0,0,0,0,0,0,0,0,1,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,1],
-];
-
-function drawSprite(sprite, x, y, scale, color) {
-  ctx.fillStyle = color;
-  for (let row = 0; row < sprite.length; row++) {
-    for (let col = 0; col < sprite[row].length; col++) {
-      if (sprite[row][col]) {
-        ctx.fillRect(
-          Math.floor(x + col * scale),
-          Math.floor(y + row * scale),
-          Math.ceil(scale),
-          Math.ceil(scale)
-        );
-      }
-    }
-  }
-}
-
-// --- GAME STATE ---
-const COLS = 11, ROWS = 5;
-let scale, invX, invY, invDX, invDY;
-let invaders = [];
-let bullets = [];
-let invBullets = [];
-let shields = [];
-let ship = {};
-let frame = 0;
-let stepTimer = 0;
-let stepInterval = 45;
-let gameOver = false;
-let score = 0;
-let lives = 3;
-let explosions = [];
-let ufoX = -100, ufoActive = false, ufoTimer = 0;
-let highScore = 0;
-
-function initGame() {
-  const W = canvas.width, H = canvas.height;
-  // Scale so invaders fill ~75% of screen width and ~50% of height
-  const scaleByW = Math.floor((W * 0.80) / (COLS * 15)); // 15 = sp+gap per col
-  const scaleByH = Math.floor((H * 0.55) / (ROWS * 14)); // 14 = sp+gap per row
-  scale = Math.max(2, Math.min(scaleByW, scaleByH));
-  const sp = scale * 11;
-  const gap = scale * 4;
-  const totalW = COLS * (sp + gap) - gap;
-  invX = Math.floor((W - totalW) / 2);
-  invY = Math.floor(H * 0.08);
-  invDX = scale;
-
-  invaders = [];
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      invaders.push({ row: r, col: c, alive: true });
-    }
-  }
-
-  const shieldY = Math.floor(H * 0.72);
-  const shieldW = scale * 14;
-  const shieldH = scale * 10;
-  const numShields = 4;
-  const shieldSpacing = Math.floor(W / (numShields + 1));
-  shields = [];
-  for (let i = 0; i < numShields; i++) {
-    const sx = shieldSpacing * (i + 1) - shieldW / 2;
-    // store per-pixel damage map
-    const pixels = [];
-    for (let row = 0; row < shieldBlock.length; row++) {
-      pixels[row] = [...shieldBlock[row]];
-    }
-    shields.push({ x: sx, y: shieldY, pixels, w: shieldW, h: shieldH });
-  }
-
-  ship = { x: Math.floor(W / 2), y: Math.floor(H * 0.86), vx: scale * 1.5, dir: 1 };
-  bullets = [];
-  invBullets = [];
-  explosions = [];
-  ufoX = -100;
-  ufoActive = false;
-  ufoTimer = 300;
-  stepTimer = 0;
-  gameOver = false;
-  score = 0;
-  lives = 3;
-  frame = 0;
-}
-
-function getAlive() { return invaders.filter(i => i.alive); }
-
-function getInvPos(inv) {
-  const sp = scale * 11;
-  const gap = scale * 4;
-  return {
-    x: invX + inv.col * (sp + gap),
-    y: invY + inv.row * (sp + gap) * 0.9
-  };
-}
-
-function shootBullet() {
-  if (bullets.length < 3) {
-    bullets.push({ x: ship.x, y: ship.y - scale * 4, vy: -scale * 5 });
-  }
-}
-
-function invaderShoot() {
-  const alive = getAlive();
-  if (alive.length === 0) return;
-  // pick bottom-most in random column
-  const cols = [...new Set(alive.map(i => i.col))];
-  const col = cols[Math.floor(Math.random() * cols.length)];
-  const inCol = alive.filter(i => i.col === col).sort((a, b) => b.row - a.row);
-  if (inCol.length === 0) return;
-  const inv = inCol[0];
-  const pos = getInvPos(inv);
-  invBullets.push({ x: pos.x + scale * 5.5, y: pos.y + scale * 8, vy: scale * 2.5 + Math.random() * scale });
-}
-
-function checkShieldHit(bx, by, fromTop) {
-  for (const sh of shields) {
-    const col = Math.floor((bx - sh.x) / scale);
-    const row = Math.floor((by - sh.y) / scale);
-    if (col >= 0 && col < 14 && row >= 0 && row < 10 && sh.pixels[row] && sh.pixels[row][col]) {
-      // destroy pixels in a small radius
-      for (let dr = -1; dr <= 1; dr++) {
-        for (let dc = -2; dc <= 2; dc++) {
-          const r2 = row + dr, c2 = col + dc;
-          if (r2 >= 0 && r2 < 10 && c2 >= 0 && c2 < 14 && sh.pixels[r2]) {
-            sh.pixels[r2][c2] = 0;
-          }
+        let shieldY = floor(H * 0.72)
+        let sw = sc * 14
+        let spacing = floor(W / 5)
+        shields = (0..<4).map { i in
+            Shield(x: spacing * CGFloat(i+1) - sw/2, y: shieldY,
+                   pixels: shieldBlock.map { $0 })
         }
-      }
-      return true;
+
+        shipX = floor(W / 2); shipY = floor(H * 0.86); shipDir = 1
+        bullets = []; invBullets = []; explosions = []
+        ufoX = -200; ufoActive = false; ufoTimer = 300 + Int.random(in: 0..<200)
+        frame = 0; stepTimer = 0
+        score = 0; lives = 3; gameOver = false; restartDelay = 0
     }
-  }
-  return false;
-}
 
-function update() {
-  const W = canvas.width, H = canvas.height;
-  frame++;
-
-  // Ship auto-move
-  ship.x += ship.vx * ship.dir;
-  const hw = scale * 5.5;
-  if (ship.x + hw > W - scale * 4) { ship.dir = -1; }
-  if (ship.x - hw < scale * 4) { ship.dir = 1; }
-
-  // Auto shoot
-  if (frame % 55 === 0) shootBullet();
-
-  // UFO
-  ufoTimer--;
-  if (ufoTimer <= 0 && !ufoActive) {
-    ufoActive = true;
-    ufoX = -scale * 12;
-    ufoTimer = 400 + Math.floor(Math.random() * 400);
-  }
-  if (ufoActive) {
-    ufoX += scale * 1.2;
-    if (ufoX > W + scale * 12) ufoActive = false;
-  }
-
-  // Invader step
-  stepTimer++;
-  const alive = getAlive();
-  const stepSpd = Math.max(5, stepInterval - Math.floor((55 - alive.length) * 0.6));
-  if (stepTimer >= stepSpd) {
-    stepTimer = 0;
-    const sp = scale * 11, gap = scale * 4;
-    const totalW = COLS * (sp + gap) - gap;
-    const rightEdge = invX + totalW;
-    const leftEdge = invX;
-    let hitWall = false;
-    if (invDX > 0 && rightEdge > W - scale * 8) hitWall = true;
-    if (invDX < 0 && leftEdge < scale * 8) hitWall = true;
-    if (hitWall) { invDX = -invDX; invY += scale * 6; }
-    else { invX += invDX; }
-    if (frame % 3 === 0) invaderShoot();
-  }
-
-  // Bullets
-  bullets = bullets.filter(b => {
-    b.y += b.vy;
-    if (b.y < 0) return false;
-    if (checkShieldHit(b.x, b.y, true)) return false;
-    // hit invader
-    for (const inv of invaders) {
-      if (!inv.alive) continue;
-      const pos = getInvPos(inv);
-      const iw = scale * 11, ih = scale * 8;
-      if (b.x >= pos.x && b.x <= pos.x + iw && b.y >= pos.y && b.y <= pos.y + ih) {
-        inv.alive = false;
-        const pts = inv.row === 0 ? 30 : inv.row <= 2 ? 20 : 10;
-        score += pts;
-        if (score > highScore) highScore = score;
-        explosions.push({ x: pos.x + iw/2, y: pos.y + ih/2, t: 18 });
-        return false;
-      }
-    }
-    // hit ufo
-    if (ufoActive) {
-      const ux = ufoX - scale * 6;
-      if (b.x >= ux && b.x <= ux + scale * 12 && b.y >= canvas.height * 0.04 - scale * 3 && b.y <= canvas.height * 0.04 + scale * 5) {
-        ufoActive = false;
-        score += 100;
-        explosions.push({ x: ufoX, y: canvas.height * 0.04, t: 20 });
-        return false;
-      }
-    }
-    return true;
-  });
-
-  invBullets = invBullets.filter(b => {
-    b.x += (Math.random() - 0.5) * scale * 0.3;
-    b.y += b.vy;
-    if (b.y > H) return false;
-    if (checkShieldHit(b.x, b.y, false)) return false;
-    // hit ship
-    const sx = ship.x - scale * 5.5, sy = ship.y - scale * 3.5;
-    if (b.x >= sx && b.x <= sx + scale * 11 && b.y >= sy && b.y <= sy + scale * 7) {
-      lives--;
-      explosions.push({ x: ship.x, y: ship.y, t: 30 });
-      if (lives <= 0) {
-        gameOver = true;
-        setTimeout(() => { score = 0; lives = 3; initGame(); }, 2500);
-      }
-      return false;
-    }
-    return true;
-  });
-
-  explosions = explosions.filter(e => { e.t--; return e.t > 0; });
-
-  // invaders reach bottom → reset
-  for (const inv of invaders) {
-    if (!inv.alive) continue;
-    const pos = getInvPos(inv);
-    if (pos.y + scale * 8 >= ship.y - scale * 4) {
-      gameOver = true;
-      setTimeout(() => { score = 0; lives = 3; initGame(); }, 2500);
-      break;
-    }
-  }
-
-  // all killed → reset
-  if (alive.length === 0) {
-    setTimeout(() => initGame(), 1200);
-  }
-}
-
-function drawExplosion(e) {
-  const r = (1 - e.t / 30) * scale * 14;
-  const alpha = e.t / 30;
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = scale * 0.8;
-  for (let i = 0; i < 8; i++) {
-    const angle = (i / 8) * Math.PI * 2;
-    const len = r * (0.5 + Math.random() * 0.5);
-    ctx.beginPath();
-    ctx.moveTo(e.x + Math.cos(angle) * r * 0.2, e.y + Math.sin(angle) * r * 0.2);
-    ctx.lineTo(e.x + Math.cos(angle) * len, e.y + Math.sin(angle) * len);
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
-// UFO sprite (simple)
-function drawUFO(x, y, sc) {
-  const ufoColor = '#f5d020';
-  ctx.fillStyle = ufoColor;
-  for (let r = 0; r < 3; r++) {
-    for (let c = 3; c < 9; c++) {
-      ctx.fillRect(x - sc*6 + c*sc, y - sc*3 + r*sc, sc, sc);
-    }
-  }
-  const bodyRow = [[0,0,1,1,1,1,1,1,1,1,0,0],[0,1,1,1,1,1,1,1,1,1,1,0],[1,0,1,0,1,0,1,0,1,0,1,0]];
-  for (let r = 0; r < bodyRow.length; r++) {
-    for (let c = 0; c < bodyRow[r].length; c++) {
-      if (bodyRow[r][c]) ctx.fillRect(x - sc*6 + c*sc, y + r*sc, sc, sc);
-    }
-  }
-}
-
-function drawHUD() {
-  const W = canvas.width;
-  ctx.fillStyle = '#fff';
-  ctx.font = `bold ${scale * 5}px monospace`;
-  ctx.textAlign = 'left';
-  ctx.fillText(`SCORE  ${score}`, scale * 5, scale * 6);
-  ctx.textAlign = 'right';
-  ctx.fillText(`HI  ${highScore}`, W - scale * 5, scale * 6);
-  // lives
-  ctx.textAlign = 'left';
-  ctx.fillStyle = '#0f0';
-  for (let i = 0; i < lives; i++) {
-    drawSprite(shipSprite, scale * 5 + i * scale * 16, canvas.height - scale * 10, scale * 0.9, '#0f0');
-  }
-  // bottom line
-  ctx.fillStyle = '#0f0';
-  ctx.fillRect(0, canvas.height - scale * 1.5, W, Math.ceil(scale * 0.5));
-}
-
-function draw() {
-  const W = canvas.width, H = canvas.height;
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, W, H);
-
-  const sp = scale * 11, gap = scale * 4;
-  const tick = Math.floor(frame / 20) % 2;
-
-  // Invaders
-  for (const inv of invaders) {
-    if (!inv.alive) continue;
-    const pos = getInvPos(inv);
-    let sprites, color;
-    // TI99/4A inspired colors: top=green, mid=purple/blue, bottom=orange
-    if (inv.row === 0) { sprites = [spriteA, spriteA2]; color = '#4de84d'; }
-    else if (inv.row === 1) { sprites = [spriteB, spriteB2]; color = '#7b7bff'; }
-    else if (inv.row === 2) { sprites = [spriteB, spriteB2]; color = '#9966ff'; }
-    else if (inv.row === 3) { sprites = [spriteC, spriteC2]; color = '#ff8c2a'; }
-    else { sprites = [spriteC, spriteC2]; color = '#e05c00'; }
-    drawSprite(sprites[tick], pos.x, pos.y, scale, color);
-  }
-
-  // UFO — sin animación, frame fijo
-  if (ufoActive) drawUFO(ufoX, H * 0.04, scale, 0);
-
-  // Shields
-  for (const sh of shields) {
-    ctx.fillStyle = '#0c0';
-    for (let r = 0; r < sh.pixels.length; r++) {
-      for (let c = 0; c < sh.pixels[r].length; c++) {
-        if (sh.pixels[r][c]) {
-          ctx.fillRect(sh.x + c * scale, sh.y + r * scale, scale, scale);
+    // MARK: - Update
+    private func update() {
+        guard !gameOver else {
+            restartDelay += 1
+            if restartDelay > 90 { initGame() }
+            return
         }
-      }
+        let W = bounds.width, H = bounds.height
+        frame += 1
+
+        // ship
+        shipX += sc * 1.5 * shipDir
+        if shipX + sc*5.5 > W - sc*4 { shipDir = -1 }
+        if shipX - sc*5.5 < sc*4     { shipDir =  1 }
+
+        // auto shoot
+        if frame % 55 == 0 && bullets.count < 3 {
+            bullets.append(Bullet(x: shipX, y: shipY - sc*4, vy: -sc*5))
+        }
+
+        // ufo
+        ufoTimer -= 1
+        if ufoTimer <= 0 && !ufoActive {
+            ufoActive = true; ufoX = -sc*16
+            ufoTimer = 400 + Int.random(in: 0..<400)
+        }
+        if ufoActive { ufoX += sc*1.2; if ufoX > W+sc*16 { ufoActive = false } }
+
+        // invader step
+        stepTimer += 1
+        let alive = invaders.filter { $0.alive }
+        let spd = max(4, 45 - (55 - alive.count) / 2)
+        if stepTimer >= spd {
+            stepTimer = 0
+            let totalW = CGFloat(COLS) * (sc*11 + sc*4) - sc*4
+            let hitWall = (invDX > 0 && invX+totalW > W-sc*8) || (invDX < 0 && invX < sc*8)
+            if hitWall { invDX = -invDX; invY += sc*6 } else { invX += invDX }
+            if frame % 3 == 0 { invaderShoot(alive: alive) }
+        }
+
+        // player bullets
+        bullets = bullets.filter { b in
+            var b = b; b.y += b.vy
+            if b.y < 0 { return false }
+            if checkShield(x: b.x, y: b.y) { return false }
+            for i in 0..<invaders.count {
+                guard invaders[i].alive else { continue }
+                let pos = invPos(invaders[i])
+                if b.x >= pos.x && b.x <= pos.x+sc*11 && b.y >= pos.y && b.y <= pos.y+sc*8 {
+                    invaders[i].alive = false
+                    let pts = invaders[i].row == 0 ? 30 : invaders[i].row <= 2 ? 20 : 10
+                    score += pts; if score > highScore { highScore = score }
+                    let c = rowColor(invaders[i].row)
+                    explosions.append(Explosion(x: pos.x+sc*5.5, y: pos.y+sc*4, t: 18, color: c))
+                    return false
+                }
+            }
+            if ufoActive && b.x >= ufoX-sc*7 && b.x <= ufoX+sc*7 && b.y < H*0.12 {
+                ufoActive = false; score += 100; if score > highScore { highScore = score }
+                explosions.append(Explosion(x: ufoX, y: H*0.05, t: 22, color: colorYellow))
+                return false
+            }
+            bullets[bullets.firstIndex(where: { $0.x == b.x && $0.y == b.y - b.vy }) ?? 0] = b
+            return true
+        }
+        // recalc (simple approach: just update in place)
+        for i in 0..<bullets.count { bullets[i].y += bullets[i].vy }
+        bullets = bullets.filter { b in
+            if b.y < 0 { return false }
+            if checkShield(x: b.x, y: b.y) { return false }
+            for j in 0..<invaders.count {
+                guard invaders[j].alive else { continue }
+                let pos = invPos(invaders[j])
+                if b.x >= pos.x && b.x <= pos.x+sc*11 && b.y >= pos.y && b.y <= pos.y+sc*8 {
+                    invaders[j].alive = false
+                    let pts = invaders[j].row == 0 ? 30 : invaders[j].row <= 2 ? 20 : 10
+                    score += pts; if score > highScore { highScore = score }
+                    explosions.append(Explosion(x: pos.x+sc*5.5, y: pos.y+sc*4, t: 18, color: rowColor(invaders[j].row)))
+                    return false
+                }
+            }
+            if ufoActive && b.x >= ufoX-sc*7 && b.x <= ufoX+sc*7 && b.y < H*0.12 {
+                ufoActive = false; score += 100; if score > highScore { highScore = score }
+                explosions.append(Explosion(x: ufoX, y: H*0.05, t: 22, color: colorYellow))
+                return false
+            }
+            return true
+        }
+
+        // invader bullets
+        for i in 0..<invBullets.count {
+            invBullets[i].x += CGFloat.random(in: -0.3...0.3) * sc
+            invBullets[i].y += invBullets[i].vy
+        }
+        invBullets = invBullets.filter { b in
+            if b.y > H { return false }
+            if checkShield(x: b.x, y: b.y) { return false }
+            let sx = shipX-sc*5.5, sy = shipY-sc*3.5
+            if b.x >= sx && b.x <= sx+sc*11 && b.y >= sy && b.y <= sy+sc*7 {
+                lives -= 1
+                explosions.append(Explosion(x: shipX, y: shipY, t: 30, color: colorShip))
+                if lives <= 0 { gameOver = true; restartDelay = 0 }
+                return false
+            }
+            return true
+        }
+
+        explosions = explosions.compactMap { var e = $0; e.t -= 1; return e.t > 0 ? e : nil }
+
+        // invaders reach bottom
+        for inv in invaders where inv.alive {
+            let pos = invPos(inv)
+            if pos.y + sc*8 >= shipY - sc*4 { gameOver = true; restartDelay = 0; break }
+        }
+        // all dead
+        if invaders.filter({ $0.alive }).isEmpty { initGame() }
     }
-  }
 
-  // Ship
-  if (!gameOver || frame % 6 < 4) {
-    drawSprite(shipSprite, ship.x - scale * 5.5, ship.y - scale * 3.5, scale, '#0f0');
-  }
+    private func invaderShoot(alive: [Invader]) {
+        guard !alive.isEmpty else { return }
+        let cols = Array(Set(alive.map { $0.col }))
+        let col = cols.randomElement()!
+        if let inv = alive.filter({ $0.col == col }).max(by: { $0.row < $1.row }) {
+            let pos = invPos(inv)
+            invBullets.append(Bullet(x: pos.x+sc*5.5, y: pos.y+sc*8,
+                                     vy: sc*2 + CGFloat.random(in: 0..<sc)))
+        }
+    }
 
-  // Bullets (player - thin white)
-  ctx.fillStyle = '#fff';
-  for (const b of bullets) {
-    ctx.fillRect(b.x - Math.ceil(scale * 0.5), b.y, Math.ceil(scale), scale * 4);
-  }
+    private func invPos(_ inv: Invader) -> CGPoint {
+        CGPoint(x: invX + CGFloat(inv.col) * (sc*11 + sc*4),
+                y: invY + CGFloat(inv.row) * (sc*11 + sc*4) * 0.9)
+    }
 
-  // Invader bullets (zigzag look)
-  ctx.fillStyle = '#ff0';
-  for (const b of invBullets) {
-    const z = (frame % 4 < 2) ? scale * 0.5 : -scale * 0.5;
-    ctx.fillRect(b.x + z - scale * 0.5, b.y, scale, scale * 3);
-    ctx.fillRect(b.x - z - scale * 0.5, b.y + scale * 1.5, scale, scale * 2);
-  }
+    @discardableResult
+    private func checkShield(x: CGFloat, y: CGFloat) -> Bool {
+        for i in 0..<shields.count {
+            let sh = shields[i]
+            let col = Int((x - sh.x) / sc), row = Int((y - sh.y) / sc)
+            guard col >= 0, col < 14, row >= 0, row < 10 else { continue }
+            guard shields[i].pixels[row][col] == 1 else { continue }
+            for dr in -1...1 { for dc in -2...2 {
+                let r2 = row+dr, c2 = col+dc
+                if r2 >= 0 && r2 < 10 && c2 >= 0 && c2 < 14 { shields[i].pixels[r2][c2] = 0 }
+            }}
+            return true
+        }
+        return false
+    }
 
-  // Explosions
-  for (const e of explosions) drawExplosion(e);
+    private func rowColor(_ row: Int) -> NSColor {
+        switch row { case 0: return colorGreen; case 1: return colorBlue
+            case 2: return colorViolet; case 3: return colorOrange; default: return colorOrange2 }
+    }
 
-  // HUD
-  drawHUD();
+    // MARK: - Draw
+    override func draw(_ rect: NSRect) {
+        let ctx = NSGraphicsContext.current!.cgContext
+        let W = bounds.width, H = bounds.height
+        let tick = (frame / 20) % 2
 
-  // Scanlines (very subtle, cheap)
-  ctx.fillStyle = 'rgba(0,0,0,0.08)';
-  for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 2);
-}
+        // background
+        ctx.setFillColor(NSColor.black.cgColor)
+        ctx.fill(bounds)
 
-initGame();
+        // invaders
+        for inv in invaders where inv.alive {
+            let pos = invPos(inv)
+            let sp: [[Int]]
+            switch inv.row {
+            case 0: sp = tick == 0 ? spriteA  : spriteA2
+            case 1,2: sp = tick == 0 ? spriteB : spriteB2
+            default: sp = tick == 0 ? spriteC : spriteC2
+            }
+            drawSprite(ctx, sp, x: pos.x, y: pos.y, color: rowColor(inv.row))
+        }
 
-let lastTime = 0;
-function loop(ts) {
-  if (ts - lastTime >= 33) { // ~30fps cap
-    lastTime = ts;
-    update();
-    draw();
-  }
-  requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
-</script>
-</body>
-</html>
+        // UFO
+        if ufoActive {
+            drawSprite(ctx, ufoSprite, x: ufoX - sc*7, y: H*0.04, color: colorYellow)
+        }
 
-"""#
+        // shields
+        ctx.setFillColor(colorShield.cgColor)
+        for sh in shields {
+            for r in 0..<sh.pixels.count { for c in 0..<sh.pixels[r].count {
+                if sh.pixels[r][c] == 1 {
+                    ctx.fill(CGRect(x: sh.x+CGFloat(c)*sc, y: sh.y+CGFloat(r)*sc, width: sc, height: sc))
+                }
+            }}
+        }
+
+        // ship
+        if !gameOver || frame % 6 < 4 {
+            drawSprite(ctx, shipSprite, x: shipX - sc*5.5, y: shipY - sc*3.5, color: colorShip)
+        }
+
+        // player bullets
+        ctx.setFillColor(colorBullet.cgColor)
+        for b in bullets {
+            ctx.fill(CGRect(x: b.x - sc*0.5, y: b.y, width: sc, height: sc*4))
+        }
+
+        // invader bullets zigzag
+        ctx.setFillColor(colorInvBullet.cgColor)
+        for b in invBullets {
+            let z = frame % 4 < 2 ? sc*0.5 : -sc*0.5
+            ctx.fill(CGRect(x: b.x+z-sc*0.5, y: b.y,       width: sc, height: sc*3))
+            ctx.fill(CGRect(x: b.x-z-sc*0.5, y: b.y+sc*1.5, width: sc, height: sc*2))
+        }
+
+        // explosions
+        for e in explosions {
+            let progress = CGFloat(e.t) / 30.0
+            let r = (1 - progress) * sc * 12
+            ctx.setStrokeColor(e.color.withAlphaComponent(progress).cgColor)
+            ctx.setLineWidth(sc * 0.8)
+            for i in 0..<8 {
+                let angle = CGFloat(i) / 8.0 * .pi * 2
+                let len = r * CGFloat.random(in: 0.5...1.0)
+                ctx.move(to: CGPoint(x: e.x + cos(angle)*r*0.2, y: e.y + sin(angle)*r*0.2))
+                ctx.addLine(to: CGPoint(x: e.x + cos(angle)*len, y: e.y + sin(angle)*len))
+                ctx.strokePath()
+            }
+        }
+
+        // HUD
+        let fontSize = max(12, sc * 4)
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .bold),
+            .foregroundColor: NSColor.white
+        ]
+        NSString(string: "SCORE  \(score)").draw(at: NSPoint(x: sc*3, y: H - sc*7), withAttributes: attrs)
+        let hiStr = NSString(string: "HI  \(highScore)")
+        let hiW = hiStr.size(withAttributes: attrs).width
+        hiStr.draw(at: NSPoint(x: W - hiW - sc*3, y: H - sc*7), withAttributes: attrs)
+
+        // lives
+        for i in 0..<lives {
+            drawSprite(ctx, shipSprite, x: sc*3 + CGFloat(i)*sc*14, y: sc*2, color: colorShip)
+        }
+
+        // bottom line
+        ctx.setFillColor(colorShield.cgColor)
+        ctx.fill(CGRect(x: 0, y: sc*1, width: W, height: sc*0.5))
+
+        // scanlines
+        ctx.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0.07))
+        var sy: CGFloat = 0
+        while sy < H { ctx.fill(CGRect(x: 0, y: sy, width: W, height: 2)); sy += 4 }
+    }
+
+    private func drawSprite(_ ctx: CGContext, _ sprite: [[Int]], x: CGFloat, y: CGFloat, color: NSColor) {
+        ctx.setFillColor(color.cgColor)
+        for row in 0..<sprite.count { for col in 0..<sprite[row].count {
+            if sprite[row][col] == 1 {
+                ctx.fill(CGRect(x: floor(x + CGFloat(col)*sc), y: floor(y + CGFloat(row)*sc),
+                                width: ceil(sc), height: ceil(sc)))
+            }
+        }}
+    }
 }
